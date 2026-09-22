@@ -127,31 +127,6 @@
   .category-card .cat-name { font-size: 12px; font-weight: 600; line-height: 1.2; }
   .category-card .cat-count { font-size: 10px; opacity: 0.8; }
 
-  /* GIAO DIỆN NHÓM SẢN PHẨM THEO DANH MỤC */
-  .category-group-block {
-    margin: 15px 10px 25px 10px;
-    background: #fff;
-    border-radius: var(--radius);
-    padding: 14px;
-    box-shadow: 0 1px 4px rgba(0,0,0,.05);
-  }
-  .category-group-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 10px;
-    margin-bottom: 12px;
-    border-bottom: 2px solid #f2e2de;
-  }
-  .category-group-title {
-    font-size: 17px;
-    font-weight: 800;
-    color: var(--primary);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
   /* FILTER BAR */
   .filter-bar{
     display:flex;align-items:center;gap:16px;
@@ -356,7 +331,7 @@
 
 <div class="main-wrapper">
 
-  <!-- VÙNG CÁC DANH MỤC ĐỒ CHƠI XE (MENU ĐẦU TRANG) -->
+  <!-- VÙNG CÁC DANH MỤC ĐỒ CHƠI XE -->
   <div class="category-section" id="categorySection">
     <div class="category-title">🏍️ Danh Mục Đồ Chơi Xe</div>
     <div class="category-grid" id="categoryGrid">
@@ -391,15 +366,9 @@
     <span class="see-more">Xem thêm &rsaquo;</span>
   </div>
 
-  <!-- CONTAINER CHÍNH HIỂN THỊ SẢN PHẨM PHÂN LOẠI -->
-  <div id="mainContentArea">
-    <!-- Danh sách sản phẩm chung (Dùng cho Trang chủ / Sản phẩm) -->
-    <div class="product-list" id="productList">
-      <div class="loading" id="loadingMsg">Đang tải sản phẩm từ Google Sheet...</div>
-    </div>
-
-    <!-- Vùng hiển thị Nhóm từng Danh mục (Chỉ dùng khi ở Tab Danh mục) -->
-    <div id="categoryGroupArea" style="display:none;"></div>
+  <!-- DANH SÁCH SẢN PHẨM -->
+  <div class="product-list" id="productList">
+    <div class="loading" id="loadingMsg">Đang tải sản phẩm từ Google Sheet...</div>
   </div>
 </div>
 
@@ -488,8 +457,8 @@
 const CONFIG = {
   // Thay thế bằng link Web App Google Apps Script của bạn
   API_URL: "https://script.google.com/macros/s/AKfycbyl8AY_kbED8ibmmghK0Z8lRqlYJfoiRLefl0UK7wdtDWy5to1FE1LXoCREJLf02LVzhA/exec",
-  TELEGRAM_BOT_TOKEN: "AAFPaQ6OjnYswtPStTJ9gZ5uhosOBOrCUjM",
-  TELEGRAM_CHAT_ID: "1829787967"
+  TELEGRAM_BOT_TOKEN: "YOUR_TELEGRAM_BOT_TOKEN",
+  TELEGRAM_CHAT_ID: "YOUR_TELEGRAM_CHAT_ID"
 };
 
 const NO_IMG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><rect width='100%' height='100%' fill='%23eee'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%23999'>No Image</text></svg>";
@@ -573,8 +542,6 @@ function switchTab(tabName) {
   const flashSection = document.getElementById('flashSaleSection');
   const promoBanner = document.getElementById('promoBanner');
   const filterBar = document.getElementById('filterBar');
-  const productList = document.getElementById('productList');
-  const categoryGroupArea = document.getElementById('categoryGroupArea');
 
   // 3. Xử lý ẩn/hiện tùy thuộc vào Tab đang chọn
   if (tabName === 'home') {
@@ -583,34 +550,27 @@ function switchTab(tabName) {
     if(flashSection) flashSection.style.display = 'block';
     if(promoBanner) promoBanner.style.display = 'flex';
     if(filterBar) filterBar.style.display = 'flex';
-    if(productList) productList.style.display = 'grid';
-    if(categoryGroupArea) categoryGroupArea.style.display = 'none';
     selectedCategory = 'all';
     renderCategories();
-    applyFiltersAndRender();
   } 
   else if (tabName === 'products') {
-    // TAB SẢN PHẨM: Ẩn Danh mục & Flash Sale, chỉ tập trung hiện Tất cả sản phẩm
+    // TAB SẢN PHẨM: Ẩn Danh mục & Flash Sale, chỉ tập trung hiện Sản phẩm
     if(catSection) catSection.style.display = 'none';
     if(flashSection) flashSection.style.display = 'none';
     if(promoBanner) promoBanner.style.display = 'none';
     if(filterBar) filterBar.style.display = 'flex';
-    if(productList) productList.style.display = 'grid';
-    if(categoryGroupArea) categoryGroupArea.style.display = 'none';
     selectedCategory = 'all';
-    applyFiltersAndRender();
   } 
   else if (tabName === 'categories') {
-    // TAB DANH MỤC: Hiện Khối Danh mục + Nhóm toàn bộ sản phẩm theo từng nhóm
+    // TAB DANH MỤC: Hiện khối Danh mục, Ẩn Flash Sale
     if(catSection) catSection.style.display = 'block';
     if(flashSection) flashSection.style.display = 'none';
     if(promoBanner) promoBanner.style.display = 'none';
-    if(filterBar) filterBar.style.display = 'none';
-    if(productList) productList.style.display = 'none';
-    if(categoryGroupArea) categoryGroupArea.style.display = 'block';
-    renderCategories();
-    renderGroupedCategories();
+    if(filterBar) filterBar.style.display = 'flex';
   }
+
+  // 4. Lọc lại và hiển thị danh sách sản phẩm tương ứng
+  applyFiltersAndRender();
 }
 
 /* TỰ ĐỘNG PHÂN LOẠI SẢN PHẨM VÀO DANH MỤC DỰA TRÊN TÊN */
@@ -651,69 +611,7 @@ function renderCategories() {
 function selectCategory(catId) {
   selectedCategory = catId;
   renderCategories();
-  
-  if (currentTab === 'categories') {
-    // Cuộn mượt tới nhóm danh mục tương ứng
-    const targetBlock = document.getElementById(`cat-group-${catId}`);
-    if (targetBlock) {
-      targetBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  } else {
-    applyFiltersAndRender();
-  }
-}
-
-/* HIỂN THỊ CÁC SẢN PHẨM ĐƯỢC NHÓM THEO TỪNG DANH MỤC (DÙNG CHO TAB DANH MỤC) */
-function renderGroupedCategories() {
-  const groupArea = document.getElementById('categoryGroupArea');
-  if (!groupArea) return;
-
-  const validCategories = CATEGORIES.filter(c => c.id !== 'all');
-  
-  let html = validCategories.map(cat => {
-    const catProducts = PRODUCTS.filter(p => p.Category === cat.id);
-    if (!catProducts.length) return '';
-
-    return `
-      <div class="category-group-block" id="cat-group-${cat.id}">
-        <div class="category-group-header">
-          <div class="category-group-title">
-            <span>${cat.icon}</span>
-            <span>${cat.name}</span>
-            <span style="font-size:13px; color:#888; font-weight:normal;">(${catProducts.length})</span>
-          </div>
-        </div>
-        <div class="product-list">
-          ${catProducts.map(p => `
-            <div class="product-card">
-              <div class="product-img-wrap" onclick="openProductDetail('${p.ID}')">
-                <img src="${p.Image \vert{}\vert{} NO_IMG}" onerror="this.onerror=null;this.src='${NO_IMG}';">
-              </div>
-              <div class="product-info">
-                <div class="product-name" onclick="openProductDetail('${p.ID}')">${p.Name}</div>${p.Description ? `<div class="product-desc">${p.Description}</div>` : ""}
-                <div class="row-tags">
-                  ${p.Discount ? `<span class="discount-tag">🏷 Giảm ${p.Discount}%</span>` : ""}
-                  ${p.Freeship ? `<span class="freeship-tag">📦 Freeship</span>` : ""}
-                </div>
-                <div class="sold-text">Đã bán ${p.Sold}</div>
-                <div class="price-row">
-                  <div class="price-block">
-                    <span class="price-now">${formatVND(p.Price)}</span>${p.OldPrice ? `<span class="price-old">${formatVND(p.OldPrice)}</span>` : ""}
-                  </div>
-                  <button class="buy-btn" onclick="addToCart('${p.ID}')">
-                    <svg viewBox="0 0 24 24"><path d="M3 3h2l.4 2M7 13h10l3-8H5.4M7 13L5.4 5M7 13l-2 7h13"/></svg>
-                    Mua
-                  </button>
-                </div>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  groupArea.innerHTML = html || '<div class="empty">Chưa có sản phẩm nào được phân loại.</div>';
+  applyFiltersAndRender();
 }
 
 /* FLASH SALE TIMER */
@@ -908,12 +806,10 @@ function applyFiltersAndRender(){
 
 function renderProducts(list){
   const listEl = document.getElementById("productList");
-  if(!listEl) return;
-  
   if(!list.length){
     const msg = PRODUCTS.length === 0
       ? "Chưa có sản phẩm nào trong Google Sheet."
-      : "Không tìm thấy sản phẩm phù hợp.";
+      : "Không tìm thấy sản phẩm trong danh mục này.";
     listEl.innerHTML = `<div class="empty">${msg}</div>`;
     return;
   }
